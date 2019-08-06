@@ -1,25 +1,37 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/paymentdata/releaseforms/util"
+
+	"github.com/paymentdata/releaseforms/listener"
 
 	"github.com/paymentdata/releaseforms/form"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
-	http.HandleFunc("/releaseForm", HandleReleaseEvent)
+	//Listen for WebHooks
+	listener.Listen()
 
-	e := http.ListenAndServe("0.0.0.0:3331", nil)
+	//Prepare for Form generation requests
+	http.HandleFunc("/releaseForm", RenderReleaseForm)
+
+	e := http.ListenAndServe(os.Getenv("FormHost"), nil)
 	if e != nil {
 		fmt.Println(e.Error())
 	}
 }
 
-func HandleReleaseEvent(w http.ResponseWriter, r *http.Request) {
+func RenderReleaseForm(w http.ResponseWriter, r *http.Request) {
 	var (
 		e   error
 		rtd form.ReleaseTemplateData
@@ -32,15 +44,22 @@ func HandleReleaseEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("Decoded: %+v", rtd)
-	t, e := template.New("releaseForm").Parse(form.ReleaseTemplate)
+	util.GetPDF(Render(rtd))
+
+}
+
+func Render(rtd form.ReleaseTemplateData) []byte {
+	var (
+		tpl bytes.Buffer
+		e   error
+	)
+	t, e := template.New("thing").Parse(form.ReleaseTemplate)
 	if e != nil {
 		fmt.Printf("Err %v", e)
 	}
-
-	e = t.Execute(w, rtd)
-
+	e = t.Execute(&tpl, rtd)
 	if e != nil {
 		log.Printf("TEMPLATE ERR: %v\n", e)
 	}
-
+	return tpl.Bytes()
 }

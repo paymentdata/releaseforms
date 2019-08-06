@@ -12,7 +12,8 @@ const (
 	PDFConverterEndpoint = "http://127.0.0.1:8080/convert?auth=%s&ext=html"
 	weaverAuthKey        = "weaver"
 )
-func getPDF(data []byte) ([]byte, error) {
+
+func GetPDF(data []byte) ([]byte, error) {
 	pdfEndpoint := fmt.Sprintf(PDFConverterEndpoint, weaverAuthKey)
 	client := &http.Client{}
 
