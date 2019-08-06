@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -20,7 +18,7 @@ import (
 
 func main() {
 	//Listen for WebHooks
-	listener.Listen()
+	go listener.Listen()
 
 	//Prepare for Form generation requests
 	http.HandleFunc("/releaseForm", RenderReleaseForm)
@@ -33,7 +31,6 @@ func main() {
 
 func RenderReleaseForm(w http.ResponseWriter, r *http.Request) {
 	var (
-		e   error
 		rtd form.ReleaseTemplateData
 	)
 
@@ -42,24 +39,15 @@ func RenderReleaseForm(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
+	pdfResponse, err := util.GetPDF(rtd.Render())
+	if err != nil {
+		panic(err)
+	}
 	log.Printf("Decoded: %+v", rtd)
-	util.GetPDF(Render(rtd))
 
-}
-
-func Render(rtd form.ReleaseTemplateData) []byte {
-	var (
-		tpl bytes.Buffer
-		e   error
-	)
-	t, e := template.New("thing").Parse(form.ReleaseTemplate)
+	n, e := w.Write(pdfResponse)
 	if e != nil {
-		fmt.Printf("Err %v", e)
+		panic(e)
 	}
-	e = t.Execute(&tpl, rtd)
-	if e != nil {
-		log.Printf("TEMPLATE ERR: %v\n", e)
-	}
-	return tpl.Bytes()
+	fmt.Printf("Wrote %d bytes!", n)
 }

@@ -10,7 +10,7 @@ import (
 
 const (
 	PDFConverterEndpoint = "http://127.0.0.1:8080/convert?auth=%s&ext=html"
-	weaverAuthKey        = "weaver"
+	weaverAuthKey        = "arachnys-weaver"
 )
 
 func GetPDF(data []byte) ([]byte, error) {

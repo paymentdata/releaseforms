@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/paymentdata/releaseforms/form"
+
 	"net/http"
 
 	"gopkg.in/go-playground/webhooks.v5/github"
@@ -31,10 +33,18 @@ func Listen() {
 
 		case github.PushPayload:
 			push := payload.(github.PushPayload)
-			fmt.Printf("commit %s authored by %v pushed @ %s",
+			fmt.Printf("commit %s authored by %v pushed @ %s\n",
 				push.Commits[0].ID[:7],
 				push.Commits[0].Author,
 				push.Commits[0].Timestamp)
+
+			var rtd form.ReleaseTemplateData
+			rtd.Commit = push.Commits[0].ID[:7]
+			rtd.Author = push.Commits[0].Author.Name
+			rtd.Date = push.Commits[0].Timestamp
+			rtd.Product = push.Repository.Name
+
+			
 
 		case github.ReleasePayload:
 			release := payload.(github.ReleasePayload)

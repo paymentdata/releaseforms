@@ -1,5 +1,12 @@
 package form
 
+import (
+	"bytes"
+	"fmt"
+	"html/template"
+	"log"
+)
+
 //ReleaseTemplateData is the encapulative struct for software release forms.
 type ReleaseTemplateData struct {
 
@@ -24,4 +31,20 @@ type Commit struct {
 	CodeReviewAndTesting,
 	CodeReviewAndTestingNotes,
 	ApprovedBy string
+}
+
+func (rtd *ReleaseTemplateData) Render() []byte {
+	var (
+		tpl bytes.Buffer
+		e   error
+	)
+	t, e := template.New("thing").Parse(ReleaseTemplate)
+	if e != nil {
+		fmt.Printf("Err %v", e)
+	}
+	e = t.Execute(&tpl, rtd)
+	if e != nil {
+		log.Printf("TEMPLATE ERR: %v\n", e)
+	}
+	return tpl.Bytes()
 }
