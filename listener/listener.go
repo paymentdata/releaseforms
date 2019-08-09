@@ -2,7 +2,10 @@ package listener
 
 import (
 	"fmt"
+	"log"
 	"os"
+
+	"github.com/paymentdata/releaseforms/util"
 
 	"github.com/paymentdata/releaseforms/form"
 
@@ -14,6 +17,8 @@ import (
 const (
 	path1 = "/webhooks1"
 	path2 = "/webhooks2"
+
+	pdfext = ".pdf"
 )
 
 func Listen() {
@@ -34,18 +39,37 @@ func Listen() {
 		case github.PushPayload:
 			push := payload.(github.PushPayload)
 			fmt.Printf("commit %s authored by %v pushed @ %s\n",
-				push.Commits[0].ID[:7],
-				push.Commits[0].Author,
-				push.Commits[0].Timestamp)
+				push.HeadCommit.ID[:7],
+				push.HeadCommit.Author,
+				push.HeadCommit.Timestamp)
 
 			var rtd form.ReleaseTemplateData
-			rtd.Commit = push.Commits[0].ID[:7]
-			rtd.Author = push.Commits[0].Author.Name
-			rtd.Date = push.Commits[0].Timestamp
+			rtd.Commit = push.HeadCommit.ID[:7]
+			rtd.CommitterName = push.HeadCommit.Committer.Email
+			rtd.Author = push.HeadCommit.Author.Name
+			rtd.Date = push.HeadCommit.Timestamp
+			rtd.OWASPImpact = "none"
+			rtd.PCIImpact = "minimal"
+			rtd.BackOutProc = "revert this change"
 			rtd.Product = push.Repository.Name
 
-			
-
+			f, err := os.Create(rtd.Commit + pdfext)
+			if err != nil {
+				panic(err)
+			}
+			pdfResponse, err := util.GetPDF(rtd.Render())
+			if err != nil {
+				panic(err)
+			}
+			n, err := f.Write(pdfResponse)
+			if err != nil {
+				panic(err)
+			}
+			log.Printf("Wrote %d bytes!", n)
+			err = f.Close()
+			if err != nil {
+				panic(err)
+			}
 		case github.ReleasePayload:
 			release := payload.(github.ReleasePayload)
 			// Do whatever you want from here...

@@ -17,7 +17,14 @@ type ReleaseTemplateData struct {
 
 	//Included changes
 	Commit string `json:"Commit"`
-	Author string `json:"Author"`
+
+	CommitterName string `json:"Committer"`
+	Author        string `json:"Author"`
+
+	BackOutProc string `json:"BackOutProc"`
+
+	PCIImpact   string `json:"PCIImpact"`
+	OWASPImpact string `json:"OWASPImpact"`
 }
 
 //Commit is the Change Item primitive
