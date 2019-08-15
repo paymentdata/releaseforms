@@ -1,7 +1,3 @@
 # Release Forms
 
-This should help us manage rapid releases more.
-
-## running
-
-hi
+This might help us manage rapid releases more easily.
