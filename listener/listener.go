@@ -36,6 +36,10 @@ func Listen() {
 
 		case github.PushPayload:
 			push := payload.(github.PushPayload)
+			if push.Deleted {
+				fmt.Printf("%s (%s) deleted %s\n", push.Pusher.Name, push.Pusher.Email, push.Ref)
+				return
+			}
 			fmt.Printf("commit %s authored by %v pushed @ %s\n",
 				push.HeadCommit.ID[:7],
 				push.HeadCommit.Author,
