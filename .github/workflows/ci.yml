@@ -16,20 +16,12 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
  
-    - name: relocate src
-      run: |
-        mkdir -p /home/runner/go/src/github.com/paymentdata/releaseforms; cp -r . /home/runner/go/src/github.com/paymentdata/releaseforms
-
     - name: Get dependencies
       run: |
-        cd ~/go/src/github.com/paymentdata/releaseforms
-        go get -v -t -d ./...
+        go mod tidy
+
+    - name: Run Tests
+      run: go test ./... -v -cover
 
     - name: Build
-      run: cd ~/go/src/github.com/paymentdata/releaseforms; go build -v .
-    
-    - name: List Tests to Run
-      run: cd ~/go/src/github.com/paymentdata/releaseforms; go test ./... -list '^(TestUnit*)'
-    
-    - name: Run Unit Tests
-      run: cd ~/go/src/github.com/paymentdata/releaseforms; go test ./... -v -cover -run '^(TestUnit*)'
+      run: go build -v .
