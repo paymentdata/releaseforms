@@ -1,0 +1,13 @@
+version: '3'
+services:
+  formdaemon:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - GitHookPort
+      - FormHost
+  athenapdf:
+    image: arachnysdocker/athenapdf-service
+    ports:
+      - "8080:8080"
