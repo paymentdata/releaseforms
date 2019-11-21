@@ -20,6 +20,7 @@ const (
 	pdfext = ".pdf"
 )
 
+//Listen will construct the *github.Webhook, register the http.HandlerFunc, and ListenAndServe the handler over os.Getenv("GitHookPort")
 func Listen() {
 	hook1, _ := github.New(github.Options.Secret("MyGitHubSuperSecretSecrect...?"))
 
