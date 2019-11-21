@@ -3,14 +3,11 @@ package listener
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
-	"github.com/paymentdata/releaseforms/util"
-
 	"github.com/paymentdata/releaseforms/form"
-
-	"net/http"
-
+	"github.com/paymentdata/releaseforms/util"
 	"gopkg.in/go-playground/webhooks.v5/github"
 )
 
