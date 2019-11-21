@@ -1,5 +1,8 @@
 package form
 
+//ReleaseTemplate is the go html/template used to render the form.
+//Can publish HTML, though current workflow is to send the rendered HTML payload
+//  to the athenapdf microservice for signing/distribution.
 const ReleaseTemplate string = `<form class="form-horizontal">
 <fieldset>
 
