@@ -13,6 +13,7 @@ import (
 
 	"github.com/paymentdata/releaseforms/form"
 
+	//autoload has an init() which will load our .env if no other ENV is set for the constituent config items
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -29,6 +30,7 @@ func main() {
 	}
 }
 
+//RenderReleaseForm is the handler mounted to the form-generating HTTP server **(which is a seperate server/gopher from the github webhook listener.)
 func RenderReleaseForm(w http.ResponseWriter, r *http.Request) {
 	var (
 		rtd form.ReleaseTemplateData
