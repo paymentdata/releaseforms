@@ -1,6 +1,6 @@
 # objective:
 
-### to implement a service which can subscribes to _some stream_ of **release events** and, upon release, publish some **release document** which is structured to comply with [PCIDSS](https://pcicompliance.stanford.edu/sites/g/files/sbiybj7706/f/16._change_control_policy_0.pdf)
+### to implement a service which subscribes to **release events** and publishes associated **release documents** which are structured to comply with [PCIDSS](https://pcicompliance.stanford.edu/sites/g/files/sbiybj7706/f/16._change_control_policy_0.pdf)
 
 # releaseforms
 
