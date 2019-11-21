@@ -7,24 +7,16 @@ import (
 	"log"
 )
 
-//ReleaseTemplateData is the encapulative struct for software release forms.
+//ReleaseTemplateData is the encapsulating struct for software release forms.
 type ReleaseTemplateData struct {
-
-	//Release Date
-	Date string `json:"Date"`
-	//Product
-	Product string `json:"Product"`
-
-	//Included changes
-	Commit string `json:"Commit"`
-
+	Date          string `json:"Date"`
+	Product       string `json:"Product"`
+	Commit        string `json:"Commit"`
 	CommitterName string `json:"Committer"`
 	Author        string `json:"Author"`
-
-	BackOutProc string `json:"BackOutProc"`
-
-	PCIImpact   string `json:"PCIImpact"`
-	OWASPImpact string `json:"OWASPImpact"`
+	BackOutProc   string `json:"BackOutProc"`
+	PCIImpact     string `json:"PCIImpact"`
+	OWASPImpact   string `json:"OWASPImpact"`
 }
 
 //Commit is the Change Item primitive
@@ -40,6 +32,8 @@ type Commit struct {
 	ApprovedBy string
 }
 
+//Render is a receiver which returns the ReleaseTemplateData as a []byte payload.
+//Used for transporting the bytes over the network currently.
 func (rtd *ReleaseTemplateData) Render() []byte {
 	var (
 		tpl bytes.Buffer

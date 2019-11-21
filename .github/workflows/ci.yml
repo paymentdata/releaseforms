@@ -27,9 +27,6 @@ jobs:
 
     - name: Build
       run: cd ~/go/src/github.com/paymentdata/releaseforms; go build -v .
-    
-    - name: List Tests to Run
-      run: cd ~/go/src/github.com/paymentdata/releaseforms; go test ./... -list '^(TestUnit*)'
-    
+
     - name: Run Unit Tests
-      run: cd ~/go/src/github.com/paymentdata/releaseforms; go test ./... -v -cover -run '^(TestUnit*)'
+      run: cd ~/go/src/github.com/paymentdata/releaseforms; go test ./... -v -cover
