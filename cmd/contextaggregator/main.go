@@ -25,32 +25,32 @@ var re = regexp.MustCompile(`#[0-9]*`)
 var uptoproposal = regexp.MustCompile(`(?s)\*\*Purpose\*\*.*\*\*Proposal`)
 var uptobugdescription = regexp.MustCompile(`(?s)\*\*Describe the bug\*\*.*\*\*To`)
 
-const (
-	productrepo = "somerepo"
-	org = "paymentdata"
+var (
+	productrepo = os.Getenv("REPO")
+	org         = os.Getenv("ORG")
 )
 
 func main() {
-	if len(os.Getenv("PAT")) == 0 {
-		log.Fatal("this process is initially intended to service private repositories, and thus requires a populated $PAT env var")
-	}
-
+	
 	var (
 		ctx = context.Background()
+		
+		client *github.Client
 
-		tc = oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: os.Getenv("PAT")},
-		))
-
-		client = github.NewClient(tc)
-	)
-
-	var (
 		err    error
 		prIDs  []int
 		tmpnum int
 	)
-
+	
+	if pat := os.Getenv("PAT"); len(pat) > 0 {
+		client = github.NewClient(
+			oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: os.Getenv("PAT")},
+			)),
+		) 
+	} else {
+		client = github.NewClient(nil)
+	}
 	gd := gob.NewDecoder(os.Stdin)
 
 	for {
@@ -130,7 +130,6 @@ func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Clien
 			fmt.Printf("description of issue:\n\t%s", summaryofissue)
 		}
 	}
-	change.ApprovedBy = "Approved by: "
 	reviews, _, err := c.PullRequests.ListReviews(ctx, org, productrepo, pullRequestID, nil)
 	if err != nil {
 		panic(err)
