@@ -44,16 +44,14 @@ func Listen() {
 				push.HeadCommit.Timestamp)
 
 			var rtd form.ReleaseTemplateData
-			rtd.Commit = push.HeadCommit.ID[:7]
-			rtd.CommitterName = push.HeadCommit.Committer.Email
-			rtd.Author = push.HeadCommit.Author.Name
+			//TODO for CD, this needs updating for ~new changelist
 			rtd.Date = push.HeadCommit.Timestamp
 			rtd.OWASPImpact = "none"
 			rtd.PCIImpact = "minimal"
 			rtd.BackOutProc = "revert this change"
 			rtd.Product = push.Repository.Name
 
-			f, err := os.Create(rtd.Commit + pdfext)
+			f, err := os.Create(rtd.Changes[0].CommitSHA + pdfext)
 			if err != nil {
 				panic(err)
 			}
