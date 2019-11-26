@@ -34,18 +34,21 @@ const ReleaseTemplate string = `<form class="form-horizontal">
   <label class="col-md-4 control-label" for="prependedtext">Included Changes:</label>
   <div class="col-md-4">
     <div class="input-group">
-      <input id="prependedtext" name="prependedtext" class="form-control" placeholder="{{ .Commit }}" type="text">
-    </div>
-  </div>
-</div>
-
-<!-- Prepended text -->
-<div class="form-group">
-  <label class="col-md-4 control-label" for="prependedtext">Changes Approved By:</label>
-  <div class="col-md-4">
-    <div class="input-group">
-      <input id="prependedtext" name="prependedtext" class="form-control" placeholder="{{ .CommitterName }}" type="text">
-    </div>
+    {{ range $key, $value := .Changes }}
+    <li>Change Item {{ inc $key }}: {{ $value.Title }} <b>[{{ $value.ID }}][{{ $value.CommitSHA }}]</b></li>
+    <h3>Written By:</h3>
+    <h5>{{ $value.Developer }}</h5>
+    <h3>Summary of changes:</h3>
+    <h5>Description of Issue:</h5>
+    <p>{{ $value.SummaryOfChangesNeeded }}</p>
+    <h5>Description of Solution:</h5>
+    <p>{{ $value.SummaryOfChangesImplemented }}</p>
+    {{ if $value.IssueID }}
+    <b>Issue ID:{{ $value.IssueID }}</b>
+    {{ end }}
+    <b>{{ $value.ApprovedBy }}</b>
+    <hr><hr>
+  {{ end }}    </div>
   </div>
 </div>
 

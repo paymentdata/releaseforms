@@ -9,27 +9,30 @@ import (
 
 //ReleaseTemplateData is the encapsulating struct for software release forms.
 type ReleaseTemplateData struct {
-	Date          string `json:"Date"`
-	Product       string `json:"Product"`
-	Commit        string `json:"Commit"`
-	CommitterName string `json:"Committer"`
-	Author        string `json:"Author"`
-	BackOutProc   string `json:"BackOutProc"`
-	PCIImpact     string `json:"PCIImpact"`
-	OWASPImpact   string `json:"OWASPImpact"`
+	Date        string       `json:"Date"`
+	Product     string       `json:"Product"`
+	Changes     []ChangeItem `json:"ChangeItems"`
+	BackOutProc string       `json:"BackOutProc"`
+	PCIImpact   string       `json:"PCIImpact"`
+	OWASPImpact string       `json:"OWASPImpact"`
 }
 
-//Commit is the Change Item primitive
-type Commit struct {
-	Text        string
-	RequestedBy string
-	SummaryOfChanges,
-	Notes,
-	Developer,
-	TestedBy,
-	CodeReviewAndTesting,
-	CodeReviewAndTestingNotes,
-	ApprovedBy string
+//ChangeItem represents a unit of change, where and engineering solution addresses a biz need, either a feature or a bug.
+type ChangeItem struct {
+	IssueID, //Issue ID
+	ID int // PR ID
+
+	Title, // PR Title
+	CommitSHA, // Merge Commit
+	RequestedBy, // Source of Issue
+	SummaryOfChangesNeeded, // Issue Body as Need and PR Body as Solution
+	SummaryOfChangesImplemented, // Issue Body as Need and PR Body as Solution
+	Notes, // Issue Body
+	Developer, // PR User
+	TestedBy, // PR User
+	CodeReviewAndTesting, // Approving Reviewers + Developer
+	CodeReviewAndTestingNotes, // Reviewer comments?
+	ApprovedBy string // Approving Reviewers
 }
 
 //Render is a receiver which returns the ReleaseTemplateData as a []byte payload.
