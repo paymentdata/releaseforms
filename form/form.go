@@ -7,6 +7,13 @@ import (
 	"log"
 )
 
+var funcMap = template.FuncMap{
+	// The name "inc" is what the function will be called in the template text.
+	"inc": func(i int) int {
+		return i + 1
+	},
+}
+
 //ReleaseTemplateData is the encapsulating struct for software release forms.
 type ReleaseTemplateData struct {
 	Date        string       `json:"Date"`
@@ -42,7 +49,7 @@ func (rtd *ReleaseTemplateData) Render() []byte {
 		tpl bytes.Buffer
 		e   error
 	)
-	t, e := template.New("thing").Parse(ReleaseTemplate)
+	t, e := template.New("thing").Funcs(funcMap).Parse(ReleaseTemplate)
 	if e != nil {
 		fmt.Printf("Err %v", e)
 	}
