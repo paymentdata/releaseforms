@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/go-github/v28/github"
 	"github.com/paymentdata/releaseforms/form"
+	"github.com/paymentdata/releaseforms/people"
 	"github.com/paymentdata/releaseforms/util"
 	"golang.org/x/oauth2"
 
@@ -31,23 +32,23 @@ var (
 )
 
 func main() {
-	
+
 	var (
 		ctx = context.Background()
-		
+
 		client *github.Client
 
 		err    error
 		prIDs  []int
 		tmpnum int
 	)
-	
+
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
 		client = github.NewClient(
 			oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 				&oauth2.Token{AccessToken: os.Getenv("PAT")},
 			)),
-		) 
+		)
 	} else {
 		client = github.NewClient(nil)
 	}
@@ -145,7 +146,7 @@ func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Clien
 	return change
 }
 func GetName(username string, ctx context.Context, c *github.Client) string {
-	if name, ok := PeopleMap[username]; ok {
+	if name, ok := people.PeopleMap[username]; ok {
 		return name
 	}
 	u, _, err := c.Users.Get(ctx, username)
