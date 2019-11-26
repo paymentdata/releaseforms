@@ -10,8 +10,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/v28/github"
+	"github.com/paymentdata/releaseforms/form"
+	"github.com/paymentdata/releaseforms/util"
 	"golang.org/x/oauth2"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -21,6 +24,11 @@ var re = regexp.MustCompile(`#[0-9]*`)
 
 var uptoproposal = regexp.MustCompile(`(?s)\*\*Purpose\*\*.*\*\*Proposal`)
 var uptobugdescription = regexp.MustCompile(`(?s)\*\*Describe the bug\*\*.*\*\*To`)
+
+const (
+	productrepo = "somerepo"
+	org = "paymentdata"
+)
 
 func main() {
 	if len(os.Getenv("PAT")) == 0 {
@@ -57,31 +65,53 @@ func main() {
 		prIDs = append(prIDs, tmpnum)
 	}
 
+	var rtd form.ReleaseTemplateData
+	rtd.Date = time.Now().String()
+	rtd.Product = "somerepo"
+	rtd.BackOutProc = "git revert"
+	rtd.PCIImpact = "none"
+	rtd.OWASPImpact = "none"
 	for _, num := range prIDs {
-		ConstructChangeItem(ctx, num, client)
+		rtd.Changes = append(rtd.Changes, ConstructChangeItem(ctx, num, client))
 	}
 
-}
-
-func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Client) {
-	pr, _, err := c.PullRequests.Get(ctx, "someorg", "somerepo", pullRequestID)
+	f, err := os.Create(rtd.Product + "-" + rtd.Changes[0].CommitSHA + ".pdf")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("PR[%d]: %s (opened by %s)\n\t", pullRequestID, *pr.Title, *pr.User.Login)
-	if len(*pr.Body) > 0 {
-		if len(*pr.Body) > 80 {
-			fmt.Printf("body: [%s]\n\t", (*pr.Body)[:80])
-		} else {
-			fmt.Printf("body: [%s]\n\t", *pr.Body)
-		}
+	pdfResponse, err := util.GetPDF(rtd.Render())
+	if err != nil {
+		panic(err)
 	}
+	n, err := f.Write(pdfResponse)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Wrote %d bytes!", n)
+	err = f.Close()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Client) form.ChangeItem {
+	var change form.ChangeItem
+	change.ID = pullRequestID
+	pr, _, err := c.PullRequests.Get(ctx, org, productrepo, pullRequestID)
+	if err != nil {
+		panic(err)
+	}
+	change.Title = *pr.Title
+	change.Developer = GetName(*pr.User.Login, ctx, c)
+	change.SummaryOfChangesImplemented = *pr.Body
+	change.CommitSHA = *pr.MergeCommitSHA
 	if issueContext := re.Find([]byte(*pr.Body)); len(issueContext) > 0 {
 		issueID, err := strconv.Atoi(string(issueContext[1:]))
 		if err != nil {
 			panic(err)
 		}
-		iss, _, err := c.Issues.Get(ctx, "someorg", "somerepo", issueID)
+		change.IssueID = issueID
+		iss, _, err := c.Issues.Get(ctx, org, productrepo, issueID)
 		if err != nil {
 			panic(err)
 		}
@@ -96,19 +126,24 @@ func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Clien
 		fmt.Printf("addresses issue[%d]:(%s) opened by %s\n\t", *iss.Number, *iss.Title, GetName(*iss.User.Login, ctx, c))
 
 		if len(summaryofissue) > 0 {
+			change.SummaryOfChangesNeeded = string(summaryofissue)
 			fmt.Printf("description of issue:\n\t%s", summaryofissue)
 		}
 	}
-	reviews, _, err := c.PullRequests.ListReviews(ctx, "someorg", "somerepo", pullRequestID, nil)
+	change.ApprovedBy = "Approved by: "
+	reviews, _, err := c.PullRequests.ListReviews(ctx, org, productrepo, pullRequestID, nil)
 	if err != nil {
 		panic(err)
 	}
 	for _, r := range reviews {
 		if *r.State == "APPROVED" {
+			change.ApprovedBy += "[" + GetName(*r.User.Login, ctx, c) + "]"
 			fmt.Printf("\tapproved by %s\n", GetName(*r.User.Login, ctx, c))
 		}
 	}
+	fmt.Printf("changeitem: %+v", change)
 	fmt.Printf("\n\n##############################################\n\n")
+	return change
 }
 func GetName(username string, ctx context.Context, c *github.Client) string {
 	if name, ok := PeopleMap[username]; ok {
