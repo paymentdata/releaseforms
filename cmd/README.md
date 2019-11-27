@@ -15,8 +15,10 @@ commandline utility to generate a list of change items which represents changes 
 `./delta $lastDeploymentSHA | ./contextaggregator`, where lastDeploymentSHA is set to the prior releases Commit.
 
 
-# Full(~copy+paste) example: 
+# Full(~copy+paste) local example: 
 _(while this is only on branch `cmd-paradigm` at least)_
+
+**needs athenapdf instance running**: `docker run -p 8080:8080 --rm arachnysdocker/athenapdf-service`
 
 ```bash
 git clone https://github.com/paymentdata/releaseforms
