@@ -14,8 +14,8 @@ const (
 	weaverAuthKey        = "arachnys-weaver"
 )
 
-//GetPDF is intended to receive a rendered HTML template payload, which is intended to be submitted to the athenapdf service. 
-//The func responds with the PDF response as []byte, and/or an error if there is one. 
+//GetPDF is intended to receive a rendered HTML template payload, which is intended to be submitted to the athenapdf service.
+//The func responds with the PDF response as []byte, and/or an error if there is one.
 func GetPDF(data []byte) ([]byte, error) {
 	pdfEndpoint := fmt.Sprintf(PDFConverterEndpoint, weaverAuthKey)
 	client := &http.Client{}

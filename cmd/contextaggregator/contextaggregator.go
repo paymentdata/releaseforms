@@ -95,7 +95,7 @@ func main() {
 func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Client) form.ChangeItem {
 	var (
 		change form.ChangeItem
-		pr *github.PullRequest
+		pr     *github.PullRequest
 
 		err error
 	)

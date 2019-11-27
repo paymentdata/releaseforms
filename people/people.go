@@ -6,7 +6,6 @@ import (
 	"os"
 )
 
-
 //PeopleMap maps GitHub usernames to a human name where github doesnt have a listed User.Name
 var PeopleMap map[string]string
 
