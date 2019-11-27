@@ -34,7 +34,7 @@ func main() {
         }
 
 		//this is definitely a candidate for process refinement, kind of delegating gopher duties to the shell here.
-        cmd := exec.Command("bash", "-c", "git log "+fromSHA+".."+toSHA+" --merges --oneline --first-parent | grep -oe '#[0-9]*' | tr -d \"#\" | tr '\n' ','")
+        cmd := exec.Command("sh", "-c", "git log "+fromSHA+".."+toSHA+" --merges --oneline --first-parent | grep -oe '#[0-9]*' | tr -d \"#\" | tr '\n' ','")
 
         var (
                 prIDsource   *bufio.Reader
