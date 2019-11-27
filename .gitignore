@@ -1,3 +1,5 @@
 delta
 contextaggregator
 releaseforms
+!cmd/contextaggregator
+!cmd/delta
