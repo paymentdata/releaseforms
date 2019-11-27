@@ -2,7 +2,6 @@ package people
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 )
@@ -27,20 +26,15 @@ func init() {
 	usersjson, err := os.Open("users.json")
 	// if we os.Open returns an error then handle it
 	if err != nil {
-		fmt.Println(err)
-		return
+		return //no users.json is okay, it's just to define custom mappings of GitHub usernames -> personnel
 	}
-	fmt.Println("Successfully Opened users.json")
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer usersjson.Close()
 
 	byteValue, _ := ioutil.ReadAll(usersjson)
 
-	// we initialize our Users array
 	var people People
 
-	// we unmarshal our byteArray which contains our
-	// jsonFile's content into 'users' which we defined above
 	json.Unmarshal(byteValue, &people)
 
 	PeopleMap = make(map[string]string, len(people.People))
@@ -48,5 +42,4 @@ func init() {
 		PeopleMap[p.Username] = p.Name
 	}
 
-	fmt.Printf("Loaded peopleMap: %+v\n", PeopleMap)
 }
