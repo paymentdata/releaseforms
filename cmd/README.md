@@ -24,13 +24,8 @@ _(while this is only on branch `cmd-paradigm` at least)_
 git clone https://github.com/paymentdata/releaseforms
 cd releaseforms/
 git checkout remotes/origin/cmd-paradigm
-cd cmd/contextaggregator/
-go build
-mv contextaggregator ../..
-cd ../delta/
-go build
-mv delta ../..
-cd ../..
+go build github.com/paymentdata/releaseforms/cmd/contextaggregator
+go build github.com/paymentdata/releaseforms/cmd/delta
 echo -e "REPO=releaseforms\nORG=paymentdata" > .env
 lastDeploymentSHA=d95539a
 ./delta $lastDeploymentSHA | ./contextaggregator
