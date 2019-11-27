@@ -31,11 +31,11 @@ const ReleaseTemplate string = `<form class="form-horizontal">
 
 <!-- Prepended text-->
 <div class="form-group">
-  <label class="col-md-4 control-label" for="prependedtext">Included Changes:</label>
+  <label class="col-md-4 control-label" for="prependedtext"><h1>Included Changes:</h1></label>
   <div class="col-md-4">
     <div class="input-group">
     {{ range $key, $value := .Changes }}
-    <li>Change Item {{ inc $key }}: {{ $value.Title }} <b>[{{ $value.ID }}][{{ $value.CommitSHA }}]</b></li>
+    <h2>Change Item {{ inc $key }}: {{ $value.Title }}</h2><br><b>PR:[{{ $value.ID }}] Commit:[{{ $value.CommitSHA }}]</b></li>
     <h3>Written By:</h3>
     <h5>{{ $value.Developer }}</h5>
     <h3>Summary of changes:</h3>
@@ -46,7 +46,9 @@ const ReleaseTemplate string = `<form class="form-horizontal">
     {{ if $value.IssueID }}
     <b>Issue ID:{{ $value.IssueID }}</b>
     {{ end }}
-    <b>{{ $value.ApprovedBy }}</b>
+    {{ if $value.ApprovedBy }}
+    <b>Approved by: {{ $value.ApprovedBy }}</b>
+    {{ end }}
     <hr><hr>
   {{ end }}    </div>
   </div>
