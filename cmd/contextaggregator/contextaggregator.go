@@ -21,8 +21,6 @@ import (
 type PullRequestID int
 type PullRequestIDEmitter <-chan PullRequestID
 
-type ChangeItemEmitter <-chan form.ChangeItem
-
 var (
 	client *github.Client
 	ctx    = context.Background()
@@ -55,7 +53,7 @@ func main() {
 
 	var (
 		PullRequestIDs PullRequestIDEmitter
-		changes        <-chan form.ChangeItem
+		changes        form.ChangeItemEmitter
 
 		rtd = form.ReleaseTemplateData{
 			Date:        time.Now().String(),
@@ -161,7 +159,7 @@ func ingestPRs(input io.Reader) PullRequestIDEmitter {
 }
 
 //github context retriever gopher
-func (prEmitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) ChangeItemEmitter {
+func (prEmitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) form.ChangeItemEmitter {
 	var (
 		changeItems = make(chan form.ChangeItem, 0)
 	)

@@ -46,9 +46,9 @@ type ChangeItem struct {
 	ApprovedBy string // Approving Reviewers
 }
 
-type ChangeItemReceiver <-chan ChangeItem
+type ChangeItemEmitter <-chan ChangeItem
 
-func (rtd *ReleaseTemplateData) AggregateChanges(rx ChangeItemReceiver) {
+func (rtd *ReleaseTemplateData) AggregateChanges(rx ChangeItemEmitter) {
 	for {
 		var (
 			change ChangeItem
