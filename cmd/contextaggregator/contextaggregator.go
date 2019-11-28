@@ -14,7 +14,6 @@ import (
 	"github.com/google/go-github/v28/github"
 	"github.com/paymentdata/releaseforms/form"
 	"github.com/paymentdata/releaseforms/people"
-	"github.com/paymentdata/releaseforms/util"
 	"golang.org/x/oauth2"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -39,8 +38,6 @@ func main() {
 		ctx = context.Background()
 
 		client *github.Client
-
-		err error
 	)
 
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
@@ -66,36 +63,9 @@ func main() {
 	var changes <-chan form.ChangeItem
 	changes = prIDs.gatherChangeContexts(ctx, client)
 
-	for {
-		var (
-			change form.ChangeItem
-			more   bool
-		)
-		if change, more = <-changes; more {
-			log.Printf("adding constructed change for prID[%d]", change.ID)
-			rtd.Changes = append(rtd.Changes, change)
-		} else {
-			log.Println("aggregation of changes complete")
-			break
-		}
-	}
-
-	f, err := os.Create(rtd.Product + "-" + rtd.Changes[0].CommitSHA + ".pdf")
-	if err != nil {
-		panic(err)
-	}
-	pdfResponse, err := util.GetPDF(rtd.Render())
-	if err != nil {
-		panic(err)
-	}
-	_, err = f.Write(pdfResponse)
-	if err != nil {
-		panic(err)
-	}
-	err = f.Close()
-	if err != nil {
-		panic(err)
-	}
+	rtd.AggregateChanges(changes)
+	
+	rtd.Save()
 }
 
 func (pullRequestID prID) ConstructChangeItem(ctx context.Context, c *github.Client) form.ChangeItem {
