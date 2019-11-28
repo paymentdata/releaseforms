@@ -42,7 +42,7 @@ func init() {
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
 		client = github.NewClient(
 			oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-				&oauth2.Token{AccessToken: os.Getenv("PAT")},
+				&oauth2.Token{AccessToken: pat},
 			)),
 		)
 	} else {
