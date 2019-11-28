@@ -38,8 +38,6 @@ func main() {
 		client *github.Client
 
 		err error
-
-		changeItems = make(chan form.ChangeItem, 0)
 	)
 
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
@@ -62,31 +60,15 @@ func main() {
 	var prIDs <-chan prID
 	prIDs = ingestPRs(os.Stdin)
 
-	//github context retriever gopher
-	go func(comm <-chan prID) {
-		log.Println("firing off github gopher")
-		for {
-			var (
-				id prID
-				more bool
-			)
-			if id, more = <-prIDs; more {
-				log.Printf("github gopher constructing change item for prID[%d]", id)
-				changeItems <- ConstructChangeItem(ctx, id, client)
-			} else {
-				log.Println("closing changeItems chan")
-				close(changeItems)
-				break
-			}
-		}
-	}(prIDs)
+	var changes <-chan form.ChangeItem
+	changes = gatherChangeContexts(ctx, client, prIDs)
 
 	for {
 		var (
 			change form.ChangeItem
 			more   bool
 		)
-		if change, more = <-changeItems; more {
+		if change, more = <-changes; more {
 			log.Printf("adding constructed change for prID[%d]", change.ID)
 			rtd.Changes = append(rtd.Changes, change)
 		} else {
@@ -175,6 +157,7 @@ func GetName(username string, ctx context.Context, c *github.Client) string {
 }
 
 type prID int
+
 //prID ingestion gopher
 func ingestPRs(input io.Reader) <-chan prID {
 	var (
@@ -201,4 +184,29 @@ func ingestPRs(input io.Reader) <-chan prID {
 		}
 	}(prIDs)
 	return prIDs
+}
+
+//github context retriever gopher
+func gatherChangeContexts(ctx context.Context, c *github.Client, prEmitter <-chan prID) <-chan form.ChangeItem {
+	var (
+		changeItems = make(chan form.ChangeItem, 0)
+	)
+	log.Println("firing off github gopher")
+	go func(prIDs <-chan prID) {
+		for {
+			var (
+				id   prID
+				more bool
+			)
+			if id, more = <-prIDs; more {
+				log.Printf("github gopher constructing change item for prID[%d]", id)
+				changeItems <- ConstructChangeItem(ctx, id, c)
+			} else {
+				log.Println("closing changeItems chan")
+				close(changeItems)
+				break
+			}
+		}
+	}(prEmitter)
+	return changeItems
 }
