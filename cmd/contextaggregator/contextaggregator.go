@@ -163,13 +163,13 @@ func (prEmitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, 
 	var (
 		changeItems = make(chan form.ChangeItem, 0)
 	)
-	go func(PullRequestIDReceiver <-chan PullRequestID) {
+	go func(emitter PullRequestIDEmitter) {
 		var (
 			id   PullRequestID
 			more bool
 		)
 		for {
-			if id, more = <-PullRequestIDReceiver; more {
+			if id, more = <-emitter; more {
 				changeItems <- id.ConstructChangeItem(ctx, c)
 			} else {
 				close(changeItems)
