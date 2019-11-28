@@ -21,6 +21,8 @@ import (
 type PullRequestID int
 type PullRequestIDEmitter <-chan PullRequestID
 
+type ChangeItemEmitter <-chan form.ChangeItem
+
 var (
 	client *github.Client
 	ctx    = context.Background()
@@ -159,7 +161,7 @@ func ingestPRs(input io.Reader) PullRequestIDEmitter {
 }
 
 //github context retriever gopher
-func (emitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) <-chan form.ChangeItem {
+func (prEmitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) ChangeItemEmitter {
 	var (
 		changeItems = make(chan form.ChangeItem, 0)
 	)
@@ -176,6 +178,6 @@ func (emitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c 
 				break
 			}
 		}
-	}(emitter)
+	}(prEmitter)
 	return changeItems
 }
