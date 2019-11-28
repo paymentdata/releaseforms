@@ -36,8 +36,10 @@ func main() {
 
 	var (
 		ctx = context.Background()
-
 		client *github.Client
+		
+		prIDs prIDEmitter
+		changes <-chan form.ChangeItem
 	)
 
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
@@ -57,10 +59,8 @@ func main() {
 	rtd.PCIImpact = "none"
 	rtd.OWASPImpact = "none"
 
-	var prIDs prIDEmitter
 	prIDs = ingestPRs(os.Stdin)
-
-	var changes <-chan form.ChangeItem
+	
 	changes = prIDs.gatherChangeContexts(ctx, client)
 
 	rtd.AggregateChanges(changes)
