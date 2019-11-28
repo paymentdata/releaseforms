@@ -167,11 +167,11 @@ func (emitter prIDEmitter) gatherChangeContexts(ctx context.Context, c *github.C
 		changeItems = make(chan form.ChangeItem, 0)
 	)
 	go func(prIDs <-chan prID) {
+		var (
+			id   prID
+			more bool
+		)
 		for {
-			var (
-				id   prID
-				more bool
-			)
 			if id, more = <-prIDs; more {
 				changeItems <- id.ConstructChangeItem(ctx, c)
 			} else {
