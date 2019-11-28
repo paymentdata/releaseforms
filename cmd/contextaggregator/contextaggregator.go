@@ -52,12 +52,13 @@ func main() {
 		client = github.NewClient(nil)
 	}
 
-	var rtd form.ReleaseTemplateData
-	rtd.Date = time.Now().String()
-	rtd.Product = "somerepo"
-	rtd.BackOutProc = "git revert"
-	rtd.PCIImpact = "none"
-	rtd.OWASPImpact = "none"
+	var rtd = form.ReleaseTemplateData{
+		Date: time.Now().String(),
+		Product: "somerepo",
+		BackOutProc: "git revert",
+		PCIImpact: "none",
+		OWASPImpact: "none",
+	}
 
 	prIDs = ingestPRs(os.Stdin)
 	
