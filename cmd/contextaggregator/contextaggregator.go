@@ -88,8 +88,7 @@ func main() {
 				prID int
 				more bool
 			)
-			prID, more = <-prIDs
-			if more {
+			if prID, more = <-prIDs; more {
 				log.Printf("github gopher constructing change item for prID[%d]", prID)
 				changeItems <- ConstructChangeItem(ctx, prID, client)
 			} else {
@@ -108,8 +107,7 @@ func main() {
 				change form.ChangeItem
 				more bool
 			)
-			change, more = <-changeItems
-			if more {
+			if change, more = <-changeItems; more {
 				log.Printf("adding constructed change for prID[%d]", change.ID)
 				rtd.Changes = append(rtd.Changes, change)
 			} else {
