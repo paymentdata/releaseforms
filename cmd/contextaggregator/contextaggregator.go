@@ -18,8 +18,8 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-type prID int
-type prIDEmitter <-chan prID
+type PullRequestID int
+type PullRequestIDEmitter <-chan PullRequestID
 
 var (
 	client *github.Client
@@ -52,8 +52,8 @@ func init() {
 func main() {
 
 	var (
-		prIDs   prIDEmitter
-		changes <-chan form.ChangeItem
+		PullRequestIDs PullRequestIDEmitter
+		changes        <-chan form.ChangeItem
 
 		rtd = form.ReleaseTemplateData{
 			Date:        time.Now().String(),
@@ -64,9 +64,9 @@ func main() {
 		}
 	)
 
-	prIDs = ingestPRs(os.Stdin)
+	PullRequestIDs = ingestPRs(os.Stdin)
 
-	changes = prIDs.gatherChangeContexts(ctx, client)
+	changes = PullRequestIDs.gatherChangeContexts(ctx, client)
 
 	rtd.AggregateChanges(changes)
 
@@ -74,7 +74,7 @@ func main() {
 
 }
 
-func (pullRequestID prID) ConstructChangeItem(ctx context.Context, c *github.Client) form.ChangeItem {
+func (prID PullRequestID) ConstructChangeItem(ctx context.Context, c *github.Client) form.ChangeItem {
 	var (
 		change form.ChangeItem
 		pr     *github.PullRequest
@@ -82,8 +82,8 @@ func (pullRequestID prID) ConstructChangeItem(ctx context.Context, c *github.Cli
 		err error
 	)
 
-	change.ID = int(pullRequestID)
-	pr, _, err = c.PullRequests.Get(ctx, org, productrepo, int(pullRequestID))
+	change.ID = int(prID)
+	pr, _, err = c.PullRequests.Get(ctx, org, productrepo, int(prID))
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +113,7 @@ func (pullRequestID prID) ConstructChangeItem(ctx context.Context, c *github.Cli
 			change.SummaryOfChangesNeeded = string(summaryofissue)
 		}
 	}
-	reviews, _, err := c.PullRequests.ListReviews(ctx, org, productrepo, int(pullRequestID), nil)
+	reviews, _, err := c.PullRequests.ListReviews(ctx, org, productrepo, int(prID), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -136,12 +136,12 @@ func GetName(username string, ctx context.Context, c *github.Client) string {
 }
 
 //prID ingestion gopher
-func ingestPRs(input io.Reader) prIDEmitter {
+func ingestPRs(input io.Reader) PullRequestIDEmitter {
 	var (
 		gd    = gob.NewDecoder(input)
-		prIDs = make(chan prID)
+		prIDs = make(chan PullRequestID)
 	)
-	go func(downstreamPRlistener chan<- prID) {
+	go func(downstreamPRlistener chan<- PullRequestID) {
 		var tmpnum int
 		for {
 			if err := gd.Decode(&tmpnum); err != nil {
@@ -152,24 +152,24 @@ func ingestPRs(input io.Reader) prIDEmitter {
 					panic(err)
 				}
 			}
-			downstreamPRlistener <- prID(tmpnum)
+			downstreamPRlistener <- PullRequestID(tmpnum)
 		}
 	}(prIDs)
 	return prIDs
 }
 
 //github context retriever gopher
-func (emitter prIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) <-chan form.ChangeItem {
+func (emitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) <-chan form.ChangeItem {
 	var (
 		changeItems = make(chan form.ChangeItem, 0)
 	)
-	go func(prIDs <-chan prID) {
+	go func(PullRequestIDReceiver <-chan PullRequestID) {
 		var (
-			id   prID
+			id   PullRequestID
 			more bool
 		)
 		for {
-			if id, more = <-prIDs; more {
+			if id, more = <-PullRequestIDReceiver; more {
 				changeItems <- id.ConstructChangeItem(ctx, c)
 			} else {
 				close(changeItems)
