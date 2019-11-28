@@ -171,7 +171,7 @@ func ingestPRs(input io.Reader) prIDEmitter {
 	)
 
 	log.Println("firing off prID gopher")
-	go func(comm chan prID) {
+	go func(downstreamPRlistener chan<- prID) {
 		for {
 			if err = gd.Decode(&tmpnum); err != nil {
 				if err == io.EOF {
@@ -182,7 +182,7 @@ func ingestPRs(input io.Reader) prIDEmitter {
 				}
 			}
 			log.Printf("received prID[%d]", tmpnum)
-			prIDs <- prID(tmpnum)
+			downstreamPRlistener <- prID(tmpnum)
 		}
 	}(prIDs)
 	return prIDs
