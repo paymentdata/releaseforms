@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/gob"
 	"io"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -146,7 +145,6 @@ func ingestPRs(input io.Reader) prIDEmitter {
 		prIDs  = make(chan prID, 0)
 	)
 
-	log.Println("firing off prID gopher")
 	go func(downstreamPRlistener chan<- prID) {
 		for {
 			if err = gd.Decode(&tmpnum); err != nil {
@@ -157,7 +155,6 @@ func ingestPRs(input io.Reader) prIDEmitter {
 					panic(err)
 				}
 			}
-			log.Printf("received prID[%d]", tmpnum)
 			downstreamPRlistener <- prID(tmpnum)
 		}
 	}(prIDs)
@@ -169,7 +166,6 @@ func (emitter prIDEmitter) gatherChangeContexts(ctx context.Context, c *github.C
 	var (
 		changeItems = make(chan form.ChangeItem, 0)
 	)
-	log.Println("firing off github gopher")
 	go func(prIDs <-chan prID) {
 		for {
 			var (
@@ -177,10 +173,8 @@ func (emitter prIDEmitter) gatherChangeContexts(ctx context.Context, c *github.C
 				more bool
 			)
 			if id, more = <-prIDs; more {
-				log.Printf("github gopher constructing change item for prID[%d]", id)
 				changeItems <- id.ConstructChangeItem(ctx, c)
 			} else {
-				log.Println("closing changeItems chan")
 				close(changeItems)
 				break
 			}
