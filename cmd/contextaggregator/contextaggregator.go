@@ -162,13 +162,13 @@ func ingestPRs(input io.Reader) PullRequestIDEmitter {
 func (prEmitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) form.ChangeItemEmitter {
 	var changeItems = make(chan form.ChangeItem)
 
-	go func(emitter PullRequestIDEmitter) {
+	go func(e PullRequestIDEmitter) {
 		var (
 			id   PullRequestID
 			more bool
 		)
 		for {
-			if id, more = <-emitter; more {
+			if id, more = <-e; more {
 				changeItems <- id.ConstructChangeItem(ctx, c)
 			} else {
 				close(changeItems)
