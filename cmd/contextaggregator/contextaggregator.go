@@ -30,6 +30,8 @@ var (
 	org         = os.Getenv("ORG")
 )
 
+type prIDEmitter <-chan prID
+
 func main() {
 
 	var (
@@ -57,11 +59,11 @@ func main() {
 	rtd.PCIImpact = "none"
 	rtd.OWASPImpact = "none"
 
-	var prIDs <-chan prID
+	var prIDs prIDEmitter
 	prIDs = ingestPRs(os.Stdin)
 
 	var changes <-chan form.ChangeItem
-	changes = gatherChangeContexts(ctx, client, prIDs)
+	changes = prIDs.gatherChangeContexts(ctx, client)
 
 	for {
 		var (
@@ -159,7 +161,7 @@ func GetName(username string, ctx context.Context, c *github.Client) string {
 type prID int
 
 //prID ingestion gopher
-func ingestPRs(input io.Reader) <-chan prID {
+func ingestPRs(input io.Reader) prIDEmitter {
 	var (
 		err error
 		gd  = gob.NewDecoder(os.Stdin)
@@ -187,7 +189,7 @@ func ingestPRs(input io.Reader) <-chan prID {
 }
 
 //github context retriever gopher
-func gatherChangeContexts(ctx context.Context, c *github.Client, prEmitter <-chan prID) <-chan form.ChangeItem {
+func (emitter prIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) <-chan form.ChangeItem {
 	var (
 		changeItems = make(chan form.ChangeItem, 0)
 	)
@@ -207,6 +209,6 @@ func gatherChangeContexts(ctx context.Context, c *github.Client, prEmitter <-cha
 				break
 			}
 		}
-	}(prEmitter)
+	}(emitter)
 	return changeItems
 }
