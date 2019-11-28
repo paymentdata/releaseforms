@@ -19,29 +19,25 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
-var re = regexp.MustCompile(`#[0-9]*`)
-
-var uptoproposal = regexp.MustCompile(`(?s)\*\*Purpose\*\*.*\*\*Proposal`)
-var uptobugdescription = regexp.MustCompile(`(?s)\*\*Describe the bug\*\*.*\*\*To`)
+type prID int
+type prIDEmitter <-chan prID
 
 var (
+	client *github.Client
+	ctx    = context.Background()
+
+	re = regexp.MustCompile(`#[0-9]*`)
+
+	//below searches are relatively arbitrary, current vals come from dependence on our org issue templates.
+	uptoproposal       = regexp.MustCompile(`(?s)\*\*Purpose\*\*.*\*\*Proposal`)
+	uptobugdescription = regexp.MustCompile(`(?s)\*\*Describe the bug\*\*.*\*\*To`)
+
 	productrepo = os.Getenv("REPO")
 	org         = os.Getenv("ORG")
 )
 
-type prID int
-type prIDEmitter <-chan prID
-
-func main() {
-
-	var (
-		ctx = context.Background()
-		client *github.Client
-		
-		prIDs prIDEmitter
-		changes <-chan form.ChangeItem
-	)
-
+//initialize github client that func main() consumes
+func init() {
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
 		client = github.NewClient(
 			oauth2.NewClient(ctx, oauth2.StaticTokenSource(
@@ -51,22 +47,32 @@ func main() {
 	} else {
 		client = github.NewClient(nil)
 	}
+}
 
-	var rtd = form.ReleaseTemplateData{
-		Date: time.Now().String(),
-		Product: "somerepo",
-		BackOutProc: "git revert",
-		PCIImpact: "none",
-		OWASPImpact: "none",
-	}
+//aggregate context
+func main() {
+
+	var (
+		prIDs   prIDEmitter
+		changes <-chan form.ChangeItem
+
+		rtd = form.ReleaseTemplateData{
+			Date:        time.Now().String(),
+			Product:     "somerepo",
+			BackOutProc: "git revert",
+			PCIImpact:   "none",
+			OWASPImpact: "none",
+		}
+	)
 
 	prIDs = ingestPRs(os.Stdin)
-	
+
 	changes = prIDs.gatherChangeContexts(ctx, client)
 
 	rtd.AggregateChanges(changes)
-	
+
 	rtd.Save()
+
 }
 
 func (pullRequestID prID) ConstructChangeItem(ctx context.Context, c *github.Client) form.ChangeItem {
