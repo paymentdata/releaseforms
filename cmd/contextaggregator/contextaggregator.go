@@ -39,10 +39,7 @@ func main() {
 
 		err error
 
-		tmpnum int
-		prIDs  = make(chan int, 0)
 		changeItems = make(chan form.ChangeItem, 0)
-		done   = make(chan struct{})
 	)
 
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
@@ -55,24 +52,6 @@ func main() {
 		client = github.NewClient(nil)
 	}
 
-	//prID ingestion gopher
-	gd := gob.NewDecoder(os.Stdin)
-	go func() {
-		log.Println("firing off prID gopher")
-		for {
-			if err = gd.Decode(&tmpnum); err != nil {
-				if err == io.EOF {
-					close(prIDs)
-					break
-				} else {
-					panic(err)
-				}
-			}
-			log.Printf("received prID[%d]", tmpnum)
-			prIDs <- tmpnum
-		}
-	}()
-
 	var rtd form.ReleaseTemplateData
 	rtd.Date = time.Now().String()
 	rtd.Product = "somerepo"
@@ -80,46 +59,41 @@ func main() {
 	rtd.PCIImpact = "none"
 	rtd.OWASPImpact = "none"
 
+	var prIDs <-chan prID
+	prIDs = ingestPRs(os.Stdin)
+
 	//github context retriever gopher
-	go func() {
+	go func(comm <-chan prID) {
 		log.Println("firing off github gopher")
 		for {
 			var (
-				prID int
+				id prID
 				more bool
 			)
-			if prID, more = <-prIDs; more {
-				log.Printf("github gopher constructing change item for prID[%d]", prID)
-				changeItems <- ConstructChangeItem(ctx, prID, client)
+			if id, more = <-prIDs; more {
+				log.Printf("github gopher constructing change item for prID[%d]", id)
+				changeItems <- ConstructChangeItem(ctx, id, client)
 			} else {
 				log.Println("closing changeItems chan")
 				close(changeItems)
 				break
 			}
 		}
-	}()
+	}(prIDs)
 
-	//releaseform context aggregation gopher
-	go func (rf *form.ReleaseTemplateData) {
-		log.Println("firing off change aggregation gopher")
-		for {
-			var (
-				change form.ChangeItem
-				more bool
-			)
-			if change, more = <-changeItems; more {
-				log.Printf("adding constructed change for prID[%d]", change.ID)
-				rtd.Changes = append(rtd.Changes, change)
-			} else {
-				log.Println("aggregation of changes complete")
-				close(done)
-				break
-			}
+	for {
+		var (
+			change form.ChangeItem
+			more   bool
+		)
+		if change, more = <-changeItems; more {
+			log.Printf("adding constructed change for prID[%d]", change.ID)
+			rtd.Changes = append(rtd.Changes, change)
+		} else {
+			log.Println("aggregation of changes complete")
+			break
 		}
-	}(&rtd)
-
-	//wait for pipeline gophers to complete their jobs
-	<-done
+	}
 
 	f, err := os.Create(rtd.Product + "-" + rtd.Changes[0].CommitSHA + ".pdf")
 	if err != nil {
@@ -139,7 +113,7 @@ func main() {
 	}
 }
 
-func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Client) form.ChangeItem {
+func ConstructChangeItem(ctx context.Context, pullRequestID prID, c *github.Client) form.ChangeItem {
 	var (
 		change form.ChangeItem
 		pr     *github.PullRequest
@@ -147,8 +121,8 @@ func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Clien
 		err error
 	)
 
-	change.ID = pullRequestID
-	pr, _, err = c.PullRequests.Get(ctx, org, productrepo, pullRequestID)
+	change.ID = int(pullRequestID)
+	pr, _, err = c.PullRequests.Get(ctx, org, productrepo, int(pullRequestID))
 	if err != nil {
 		panic(err)
 	}
@@ -178,7 +152,7 @@ func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Clien
 			change.SummaryOfChangesNeeded = string(summaryofissue)
 		}
 	}
-	reviews, _, err := c.PullRequests.ListReviews(ctx, org, productrepo, pullRequestID, nil)
+	reviews, _, err := c.PullRequests.ListReviews(ctx, org, productrepo, int(pullRequestID), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -198,4 +172,33 @@ func GetName(username string, ctx context.Context, c *github.Client) string {
 		panic(err)
 	}
 	return *u.Name
+}
+
+type prID int
+//prID ingestion gopher
+func ingestPRs(input io.Reader) <-chan prID {
+	var (
+		err error
+		gd  = gob.NewDecoder(os.Stdin)
+
+		tmpnum int
+		prIDs  = make(chan prID, 0)
+	)
+
+	log.Println("firing off prID gopher")
+	go func(comm chan prID) {
+		for {
+			if err = gd.Decode(&tmpnum); err != nil {
+				if err == io.EOF {
+					close(prIDs)
+					break
+				} else {
+					panic(err)
+				}
+			}
+			log.Printf("received prID[%d]", tmpnum)
+			prIDs <- prID(tmpnum)
+		}
+	}(prIDs)
+	return prIDs
 }
