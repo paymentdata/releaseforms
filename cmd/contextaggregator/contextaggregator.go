@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -36,9 +37,11 @@ func main() {
 
 		client *github.Client
 
-		err    error
-		prIDs  []int
+		err error
+
 		tmpnum int
+		prIDs  = make(chan int, 0)
+		done   = make(chan struct{})
 	)
 
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
@@ -50,19 +53,24 @@ func main() {
 	} else {
 		client = github.NewClient(nil)
 	}
-	gd := gob.NewDecoder(os.Stdin)
 
-	for {
-		err = gd.Decode(&tmpnum)
-		if err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				panic(err)
+	//prID ingestion gopher
+	gd := gob.NewDecoder(os.Stdin)
+	go func() {
+		log.Println("firing off prID gopher")
+		for {
+			if err = gd.Decode(&tmpnum); err != nil {
+				if err == io.EOF {
+					close(prIDs)
+					break
+				} else {
+					panic(err)
+				}
 			}
+			log.Printf("received prID[%d]", tmpnum)
+			prIDs <- tmpnum
 		}
-		prIDs = append(prIDs, tmpnum)
-	}
+	}()
 
 	var rtd form.ReleaseTemplateData
 	rtd.Date = time.Now().String()
@@ -70,9 +78,29 @@ func main() {
 	rtd.BackOutProc = "git revert"
 	rtd.PCIImpact = "none"
 	rtd.OWASPImpact = "none"
-	for _, num := range prIDs {
-		rtd.Changes = append(rtd.Changes, ConstructChangeItem(ctx, num, client))
-	}
+
+	//github context retriever gopher
+	go func(rf *form.ReleaseTemplateData) {
+		log.Println("firing off github gopher")
+		for {
+			var (
+				prID int
+				more bool
+			)
+			prID, more = <-prIDs
+			if more {
+				log.Printf("github gopher processing change item for prID[%d]", prID)
+				rf.Changes = append(rf.Changes, ConstructChangeItem(ctx, prID, client))
+			} else {
+				log.Println("closing done chan")
+				close(done)
+				break
+			}
+		}
+	}(&rtd)
+
+	//wait for pipeline gophers to complete their jobs
+	<-done
 
 	f, err := os.Create(rtd.Product + "-" + rtd.Changes[0].CommitSHA + ".pdf")
 	if err != nil {
