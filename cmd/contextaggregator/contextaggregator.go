@@ -160,9 +160,8 @@ func ingestPRs(input io.Reader) PullRequestIDEmitter {
 
 //github context retriever gopher
 func (prEmitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) form.ChangeItemEmitter {
-	var (
-		changeItems = make(chan form.ChangeItem)
-	)
+	var changeItems = make(chan form.ChangeItem)
+
 	go func(emitter PullRequestIDEmitter) {
 		var (
 			id   PullRequestID
@@ -177,5 +176,6 @@ func (prEmitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, 
 			}
 		}
 	}(prEmitter)
+
 	return changeItems
 }
