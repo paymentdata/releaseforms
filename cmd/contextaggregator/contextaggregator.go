@@ -30,6 +30,7 @@ var (
 	org         = os.Getenv("ORG")
 )
 
+type prID int
 type prIDEmitter <-chan prID
 
 func main() {
@@ -157,8 +158,6 @@ func GetName(username string, ctx context.Context, c *github.Client) string {
 	}
 	return *u.Name
 }
-
-type prID int
 
 //prID ingestion gopher
 func ingestPRs(input io.Reader) prIDEmitter {
