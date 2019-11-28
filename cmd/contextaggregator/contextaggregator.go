@@ -41,6 +41,7 @@ func main() {
 
 		tmpnum int
 		prIDs  = make(chan int, 0)
+		changeItems = make(chan form.ChangeItem, 0)
 		done   = make(chan struct{})
 	)
 
@@ -80,7 +81,7 @@ func main() {
 	rtd.OWASPImpact = "none"
 
 	//github context retriever gopher
-	go func(rf *form.ReleaseTemplateData) {
+	go func() {
 		log.Println("firing off github gopher")
 		for {
 			var (
@@ -89,10 +90,30 @@ func main() {
 			)
 			prID, more = <-prIDs
 			if more {
-				log.Printf("github gopher processing change item for prID[%d]", prID)
-				rf.Changes = append(rf.Changes, ConstructChangeItem(ctx, prID, client))
+				log.Printf("github gopher constructing change item for prID[%d]", prID)
+				changeItems <- ConstructChangeItem(ctx, prID, client)
 			} else {
-				log.Println("closing done chan")
+				log.Println("closing changeItems chan")
+				close(changeItems)
+				break
+			}
+		}
+	}()
+
+	//releaseform context aggregation gopher
+	go func (rf *form.ReleaseTemplateData) {
+		log.Println("firing off change aggregation gopher")
+		for {
+			var (
+				change form.ChangeItem
+				more bool
+			)
+			change, more = <-changeItems
+			if more {
+				log.Printf("adding constructed change for prID[%d]", change.ID)
+				rtd.Changes = append(rtd.Changes, change)
+			} else {
+				log.Println("aggregation of changes complete")
 				close(done)
 				break
 			}
