@@ -164,7 +164,7 @@ type prID int
 func ingestPRs(input io.Reader) prIDEmitter {
 	var (
 		err error
-		gd  = gob.NewDecoder(os.Stdin)
+		gd  = gob.NewDecoder(input)
 
 		tmpnum int
 		prIDs  = make(chan prID, 0)
