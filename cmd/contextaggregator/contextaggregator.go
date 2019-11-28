@@ -138,16 +138,13 @@ func GetName(username string, ctx context.Context, c *github.Client) string {
 //prID ingestion gopher
 func ingestPRs(input io.Reader) prIDEmitter {
 	var (
-		err error
-		gd  = gob.NewDecoder(input)
-
-		tmpnum int
-		prIDs  = make(chan prID, 0)
+		gd    = gob.NewDecoder(input)
+		prIDs = make(chan prID)
 	)
-
 	go func(downstreamPRlistener chan<- prID) {
+		var tmpnum int
 		for {
-			if err = gd.Decode(&tmpnum); err != nil {
+			if err := gd.Decode(&tmpnum); err != nil {
 				if err == io.EOF {
 					close(prIDs)
 					break
