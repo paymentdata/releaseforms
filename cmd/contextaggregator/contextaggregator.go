@@ -97,7 +97,7 @@ func main() {
 	}
 }
 
-func ConstructChangeItem(ctx context.Context, pullRequestID prID, c *github.Client) form.ChangeItem {
+func (pullRequestID prID) ConstructChangeItem(ctx context.Context, c *github.Client) form.ChangeItem {
 	var (
 		change form.ChangeItem
 		pr     *github.PullRequest
@@ -202,7 +202,7 @@ func (emitter prIDEmitter) gatherChangeContexts(ctx context.Context, c *github.C
 			)
 			if id, more = <-prIDs; more {
 				log.Printf("github gopher constructing change item for prID[%d]", id)
-				changeItems <- ConstructChangeItem(ctx, id, c)
+				changeItems <- id.ConstructChangeItem(ctx, c)
 			} else {
 				log.Println("closing changeItems chan")
 				close(changeItems)
