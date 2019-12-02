@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/gob"
 	"io"
-	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -14,134 +13,68 @@ import (
 	"github.com/google/go-github/v28/github"
 	"github.com/paymentdata/releaseforms/form"
 	"github.com/paymentdata/releaseforms/people"
-	"github.com/paymentdata/releaseforms/util"
 	"golang.org/x/oauth2"
 
 	_ "github.com/joho/godotenv/autoload"
 )
 
-var re = regexp.MustCompile(`#[0-9]*`)
-
-var uptoproposal = regexp.MustCompile(`(?s)\*\*Purpose\*\*.*\*\*Proposal`)
-var uptobugdescription = regexp.MustCompile(`(?s)\*\*Describe the bug\*\*.*\*\*To`)
+type PullRequestID int
+type PullRequestIDEmitter <-chan PullRequestID
 
 var (
+	client *github.Client
+	ctx    = context.Background()
+
+	re = regexp.MustCompile(`#[0-9]*`)
+
+	//below searches are relatively arbitrary, current vals come from dependence on our org issue templates.
+	uptoproposal       = regexp.MustCompile(`(?s)\*\*Purpose\*\*.*\*\*Proposal`)
+	uptobugdescription = regexp.MustCompile(`(?s)\*\*Describe the bug\*\*.*\*\*To`)
+
 	productrepo = os.Getenv("REPO")
 	org         = os.Getenv("ORG")
 )
 
-func main() {
-
-	var (
-		ctx = context.Background()
-
-		client *github.Client
-
-		err error
-
-		tmpnum int
-		prIDs  = make(chan int, 0)
-		changeItems = make(chan form.ChangeItem, 0)
-		done   = make(chan struct{})
-	)
-
+//initialize github client that func main() consumes
+func init() {
 	if pat := os.Getenv("PAT"); len(pat) > 0 {
 		client = github.NewClient(
 			oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-				&oauth2.Token{AccessToken: os.Getenv("PAT")},
+				&oauth2.Token{AccessToken: pat},
 			)),
 		)
 	} else {
 		client = github.NewClient(nil)
 	}
-
-	//prID ingestion gopher
-	gd := gob.NewDecoder(os.Stdin)
-	go func() {
-		log.Println("firing off prID gopher")
-		for {
-			if err = gd.Decode(&tmpnum); err != nil {
-				if err == io.EOF {
-					close(prIDs)
-					break
-				} else {
-					panic(err)
-				}
-			}
-			log.Printf("received prID[%d]", tmpnum)
-			prIDs <- tmpnum
-		}
-	}()
-
-	var rtd form.ReleaseTemplateData
-	rtd.Date = time.Now().String()
-	rtd.Product = "somerepo"
-	rtd.BackOutProc = "git revert"
-	rtd.PCIImpact = "none"
-	rtd.OWASPImpact = "none"
-
-	//github context retriever gopher
-	go func() {
-		log.Println("firing off github gopher")
-		for {
-			var (
-				prID int
-				more bool
-			)
-			prID, more = <-prIDs
-			if more {
-				log.Printf("github gopher constructing change item for prID[%d]", prID)
-				changeItems <- ConstructChangeItem(ctx, prID, client)
-			} else {
-				log.Println("closing changeItems chan")
-				close(changeItems)
-				break
-			}
-		}
-	}()
-
-	//releaseform context aggregation gopher
-	go func (rf *form.ReleaseTemplateData) {
-		log.Println("firing off change aggregation gopher")
-		for {
-			var (
-				change form.ChangeItem
-				more bool
-			)
-			change, more = <-changeItems
-			if more {
-				log.Printf("adding constructed change for prID[%d]", change.ID)
-				rtd.Changes = append(rtd.Changes, change)
-			} else {
-				log.Println("aggregation of changes complete")
-				close(done)
-				break
-			}
-		}
-	}(&rtd)
-
-	//wait for pipeline gophers to complete their jobs
-	<-done
-
-	f, err := os.Create(rtd.Product + "-" + rtd.Changes[0].CommitSHA + ".pdf")
-	if err != nil {
-		panic(err)
-	}
-	pdfResponse, err := util.GetPDF(rtd.Render())
-	if err != nil {
-		panic(err)
-	}
-	_, err = f.Write(pdfResponse)
-	if err != nil {
-		panic(err)
-	}
-	err = f.Close()
-	if err != nil {
-		panic(err)
-	}
 }
 
-func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Client) form.ChangeItem {
+//aggregate context
+func main() {
+
+	var (
+		PullRequestIDs PullRequestIDEmitter
+		changes        form.ChangeItemEmitter
+
+		rtd = form.ReleaseTemplateData{
+			Date:        time.Now().String(),
+			Product:     "somerepo",
+			BackOutProc: "git revert",
+			PCIImpact:   "none",
+			OWASPImpact: "none",
+		}
+	)
+
+	PullRequestIDs = ingestPRs(os.Stdin)
+
+	changes = PullRequestIDs.gatherChangeContexts(ctx, client)
+
+	rtd.AggregateChanges(changes)
+
+	rtd.Save()
+
+}
+
+func (prID PullRequestID) ConstructChangeItem(ctx context.Context, c *github.Client) form.ChangeItem {
 	var (
 		change form.ChangeItem
 		pr     *github.PullRequest
@@ -149,8 +82,8 @@ func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Clien
 		err error
 	)
 
-	change.ID = pullRequestID
-	pr, _, err = c.PullRequests.Get(ctx, org, productrepo, pullRequestID)
+	change.ID = int(prID)
+	pr, _, err = c.PullRequests.Get(ctx, org, productrepo, int(prID))
 	if err != nil {
 		panic(err)
 	}
@@ -180,7 +113,7 @@ func ConstructChangeItem(ctx context.Context, pullRequestID int, c *github.Clien
 			change.SummaryOfChangesNeeded = string(summaryofissue)
 		}
 	}
-	reviews, _, err := c.PullRequests.ListReviews(ctx, org, productrepo, pullRequestID, nil)
+	reviews, _, err := c.PullRequests.ListReviews(ctx, org, productrepo, int(prID), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -200,4 +133,49 @@ func GetName(username string, ctx context.Context, c *github.Client) string {
 		panic(err)
 	}
 	return *u.Name
+}
+
+//prID ingestion gopher
+func ingestPRs(input io.Reader) PullRequestIDEmitter {
+	var (
+		gd    = gob.NewDecoder(input)
+		prIDs = make(chan PullRequestID)
+	)
+	go func(downstreamPRlistener chan<- PullRequestID) {
+		var tmpnum int
+		for {
+			if err := gd.Decode(&tmpnum); err != nil {
+				if err == io.EOF {
+					close(prIDs)
+					break
+				} else {
+					panic(err)
+				}
+			}
+			downstreamPRlistener <- PullRequestID(tmpnum)
+		}
+	}(prIDs)
+	return prIDs
+}
+
+//github context retriever gopher
+func (prEmitter PullRequestIDEmitter) gatherChangeContexts(ctx context.Context, c *github.Client) form.ChangeItemEmitter {
+	var changeItems = make(chan form.ChangeItem)
+
+	go func(e PullRequestIDEmitter) {
+		var (
+			id   PullRequestID
+			more bool
+		)
+		for {
+			if id, more = <-e; more {
+				changeItems <- id.ConstructChangeItem(ctx, c)
+			} else {
+				close(changeItems)
+				break
+			}
+		}
+	}(prEmitter)
+
+	return changeItems
 }

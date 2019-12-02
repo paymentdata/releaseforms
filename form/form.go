@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+
+	"os"
+
+	"github.com/paymentdata/releaseforms/util"
 )
 
 var funcMap = template.FuncMap{
@@ -40,6 +44,45 @@ type ChangeItem struct {
 	CodeReviewAndTesting, // Approving Reviewers + Developer
 	CodeReviewAndTestingNotes, // Reviewer comments?
 	ApprovedBy string // Approving Reviewers
+}
+
+type ChangeItemEmitter <-chan ChangeItem
+
+func (rtd *ReleaseTemplateData) AggregateChanges(rx ChangeItemEmitter) {
+	for {
+		var (
+			change ChangeItem
+			more   bool
+		)
+		if change, more = <-rx; more {
+			log.Printf("adding constructed change for prID[%d]", change.ID)
+			rtd.Changes = append(rtd.Changes, change)
+		} else {
+			log.Println("aggregation of changes complete")
+			break
+		}
+	}
+}
+
+func (rtd *ReleaseTemplateData) Save() {
+
+	f, err := os.Create(rtd.Product + "-" + rtd.Changes[0].CommitSHA + ".pdf")
+	if err != nil {
+		panic(err)
+	}
+	pdfResponse, err := util.GetPDF(rtd.Render())
+	if err != nil {
+		panic(err)
+	}
+	_, err = f.Write(pdfResponse)
+	if err != nil {
+		panic(err)
+	}
+	err = f.Close()
+	if err != nil {
+
+		panic(err)
+	}
 }
 
 //Render is a receiver which returns the ReleaseTemplateData as a []byte payload.
