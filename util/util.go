@@ -10,7 +10,7 @@ import (
 
 const (
 	//PDFConverterEndpoint points to the url which ought to route to the /convert endpoint for an instance of the AthenaPDF microservice.
-	PDFConverterEndpoint = "http://127.0.0.1:8080/convert?auth=%s&ext=html"
+	PDFConverterEndpoint = "http://athenapdf:8080/convert?auth=%s&ext=html"
 	weaverAuthKey        = "arachnys-weaver"
 )
 
