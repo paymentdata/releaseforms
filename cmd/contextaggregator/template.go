@@ -1,4 +1,4 @@
-package form
+package main
 
 //ReleaseTemplate is the go html/template used to render the form.
 //Can publish HTML, though current workflow is to send the rendered HTML payload
