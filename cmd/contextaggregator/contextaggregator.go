@@ -285,10 +285,13 @@ func (rtd *ReleaseTemplateData) AggregateChanges(rx ChangeItemEmitter) {
 }
 
 func (rtd *ReleaseTemplateData) Save(toPDF bool) {
+	var ext string
 	if toPDF {
-
+		ext = ".pdf"
+	} else {
+		ext = ".html"
 	}
-	f, err := os.Create(rtd.Product + "-" + rtd.Changes[0].CommitSHA + ".pdf")
+	f, err := os.Create(rtd.Product + "-" + rtd.Changes[0].CommitSHA + ext)
 	if err != nil {
 		panic(err)
 	}
