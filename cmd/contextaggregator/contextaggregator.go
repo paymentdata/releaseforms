@@ -190,11 +190,14 @@ const (
 	weaverAuthKey        = "arachnys-weaver"
 )
 
+var athenaPDFclient = &http.Client{
+	Timeout: 15 * time.Second,
+}
+
 //GetPDF is intended to receive a rendered HTML template payload, which is intended to be submitted to the athenapdf service.
 //The func responds with the PDF response as []byte, and/or an error if there is one.
 func GetPDF(data []byte) ([]byte, error) {
 	pdfEndpoint := fmt.Sprintf(PDFConverterEndpoint, weaverAuthKey)
-	client := &http.Client{}
 
 	// Create buffer
 	buf := new(bytes.Buffer)
@@ -221,7 +224,7 @@ func GetPDF(data []byte) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", w.FormDataContentType())
-	res, err := client.Do(req)
+	res, err := athenaPDFclient.Do(req)
 	if err != nil {
 		return nil, err
 	}
