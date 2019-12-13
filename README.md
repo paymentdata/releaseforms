@@ -31,6 +31,8 @@ git clone https://github.com/paymentdata/releaseforms
 cd releaseforms/
 echo -e "REPO=releaseforms\nORG=paymentdata" > .env
 go test ./...
+go build github.com/paymentdata/releaseforms/cmd/delta
+go build github.com/paymentdata/releaseforms/cmd/contextaggregator
 ```
 
 ### for each release: (where the previously released commit for the .git is set as $lastDeploymentSHA)
