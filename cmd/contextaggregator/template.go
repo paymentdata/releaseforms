@@ -25,7 +25,7 @@ const ReleaseTemplate string = `
    <div class="border-bottom">
     <div class="row mt-4 mx-5">
       <div class="col-xl-12">
-        <p class="paragraph-txt d-inline"><b>Release Date:</b> {{ .Date }}</p>
+        <p class="paragraph-txt d-inline"><b>Release Date:</b> {{ .Date.Format "Jan 02, 2006 15:04:05 UTC" }}</p>
       </div>
     </div>
     <div class="row mt-2 mx-5">

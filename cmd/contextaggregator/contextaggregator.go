@@ -60,7 +60,7 @@ func main() {
 		changes        ChangeItemEmitter
 
 		rtd = ReleaseTemplateData{
-			Date:        time.Now().String(),
+			Date:        time.Now(),
 			Product:     productrepo,
 			BackOutProc: "git revert",
 			PCIImpact:   "none",
@@ -240,7 +240,7 @@ var funcMap = template.FuncMap{
 
 //ReleaseTemplateData is the encapsulating struct for software release forms.
 type ReleaseTemplateData struct {
-	Date        string       `json:"Date"`
+	Date        time.Time    `json:"Date"`
 	Product     string       `json:"Product"`
 	Changes     []ChangeItem `json:"ChangeItems"`
 	BackOutProc string       `json:"BackOutProc"`
