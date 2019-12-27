@@ -4,11 +4,9 @@
 RELEASE_SPAN=$1
 
 commits=$(git log ${RELEASE_SPAN} --pretty=format:"%h" --no-merges)
-commitcount=$(wc -l <<< "$commits") && ((commitcount++))
+commitcount=$(wc -l <<< "$commits")
 
 for idx in $(seq 1 ${commitcount}); do
-    echo $idx
     commit_id=$(sed "${idx}q;d" <<< "$commits")
-
-    git log --name-status --diff-filter="ACDMRT" -1 -U $commit_id
+    git log -1 --pretty=format:%at,%h,%an,%s "${commit_id}"
 done
